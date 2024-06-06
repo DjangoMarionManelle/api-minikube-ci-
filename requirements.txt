@@ -1,6 +1,4 @@
 flask
 sqlalchemy
 flasgger
-pytest
-mysqlclient
 pymysql
