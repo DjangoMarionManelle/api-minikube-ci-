@@ -1,2 +1,4 @@
-Flask==3.0.2
-SQLAlchemy~=2.0.28
+flask
+sqlalchemy
+flasgger
+pymysql

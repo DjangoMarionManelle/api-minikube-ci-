@@ -5,12 +5,13 @@ from sqlalchemy.orm import sessionmaker
 import os
 import threading
 import signal
+from flasgger import Swagger
 
 # Configuration de la connexion à la base de données
 db_host = os.environ.get('DB_HOST', 'localhost')
 db_port = os.environ.get('DB_PORT', '3306')
 db_user = os.environ.get('DB_USER', 'root')
-db_password = os.environ.get('DB_PASSWORD', 'password')
+db_password = os.environ.get('DB_PASSWORD', '')
 db_name = os.environ.get('DB_NAME', 'mydatabase')
 store_data_route = os.environ.get('STORE_DATA_ROUTE', '/store_data')
 read_data_route = os.environ.get('READ_DATA_ROUTE', '/read_data')
@@ -32,11 +33,29 @@ class Data(Base):
 
 # Initialisation de l'application Flask
 app = Flask(__name__)
+swagger = Swagger(app)
 
 
 # Route pour le POST qui stocke des données en base de données
 @app.route('/store_data', methods=['POST'])
 def store_data():
+    """
+    Store data
+    ---
+    parameters:
+      - in: body
+        name: body
+        schema:
+          type: object
+          required:
+            - name
+          properties:
+            name:
+              type: string
+    responses:
+      200:
+        description: Data stored successfully
+    """
     data = request.json
     new_data = Data(name=data['name'])
     session.add(new_data)
@@ -47,6 +66,22 @@ def store_data():
 # Route pour le GET qui lit des données depuis la base de données
 @app.route('/read_data', methods=['GET'])
 def read_data():
+    """
+    Read data
+    ---
+    responses:
+      200:
+        description: A list of data
+        schema:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              name:
+                type: string
+    """
     data = session.query(Data).all()
     result = [{'id': item.id, 'name': item.name} for item in data]
     return jsonify(result)
