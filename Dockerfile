@@ -1,5 +1,5 @@
 # Utiliser une image de base Python officielle.
-FROM python:3.8-slim
+FROM python:3.11.5
 
 # Définir le répertoire de travail dans le conteneur.
 WORKDIR /app
@@ -17,6 +17,6 @@ COPY . .
 EXPOSE 5000
 
 # Exécuter l'application.
-CMD ["flask", "run", "--host=localhost"]
+CMD ["flask", "run", "--host=0.0.0.0"]
 
 
