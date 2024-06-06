@@ -1,4 +1,4 @@
-name: Build and Push Docker image on merge to master
+name: Build and Push Docker image on merge to main
 
 on:
   push:
@@ -46,7 +46,8 @@ jobs:
       run: |
         docker run --rm -v ${{ github.workspace }}:/app mrandrianasolo/api-minikube-ci:${{ github.sha }} sh -c "\
         mkdir -p /app/docs && \
-        flask swagger generate > /app/docs/index.html"
+        flask run --host=0.0.0.0 & sleep 5 && \
+        curl -s http://localhost:5000/apidocs | tee /app/docs/index.html"
 
     - name: Deploy Swagger documentation to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3
