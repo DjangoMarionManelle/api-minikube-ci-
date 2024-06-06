@@ -17,7 +17,7 @@ store_data_route = os.environ.get('STORE_DATA_ROUTE', '/store_data')
 read_data_route = os.environ.get('READ_DATA_ROUTE', '/read_data')
 
 # Connexion à la base de données
-engine = create_engine(f'mysql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}')
+engine = create_engine(f'mysql+pymysql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}')
 Session = sessionmaker(bind=engine)
 session = Session()
 
