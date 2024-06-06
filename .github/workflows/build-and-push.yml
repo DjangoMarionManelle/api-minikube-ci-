@@ -30,5 +30,33 @@ jobs:
         push: true
         tags: mrandrianasolo/api-minikube-ci:${{ github.sha }}
 
+    - name: Run tests
+      run: |
+        pip install -r requirements.txt
+        pytest --junitxml=results.xml
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v2
+      with:
+        name: test-results
+        path: results.xml
+
+    - name: Generate Swagger documentation
+      run: |
+        docker run --rm -v ${{ github.workspace }}:/app mrandrianasolo/api-minikube-ci:${{ github.sha }} \
+        flask swagger generate > /app/docs/swagger.yaml
+
+    - name: Deploy Swagger documentation to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./docs
+
+    - name: Send Discord notification
+      run: |
+        curl -H "Content-Type: application/json" \
+             -d "{\"content\": \"Build and deployment successful for commit ${{ github.sha }}!\"}" \
+             ${{ secrets.DISCORD_WEBHOOK_URL }}
+
     - name: Log out from Docker Hub
       run: docker logout
