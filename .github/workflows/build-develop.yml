@@ -1,4 +1,4 @@
-name: Build and Push Docker image on develop
+name: Build Docker image on develop
 
 on:
   push:
@@ -8,6 +8,20 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ROOT_PASSWORD: root_password
+          MYSQL_DATABASE: test_db
+        ports:
+          - 3306:3306
+        options: > 
+          --health-cmd="mysqladmin ping --silent" 
+          --health-interval=10s 
+          --health-timeout=5s 
+          --health-retries=3
 
     steps:
     - name: Checkout repository
@@ -30,9 +44,22 @@ jobs:
         push: true
         tags: ${{ secrets.DOCKER_USERNAME }}/api-minikube-ci:develop
 
-    - name: Run tests
+    - name: Wait for MySQL to be ready
       run: |
-        docker run --rm -v ${{ github.workspace }}/test-reports:/test-reports ${{ secrets.DOCKER_USERNAME }}/api-minikube-ci:develop sh -c "\
+        while ! docker exec $(docker ps -q --filter "ancestor=mysql:5.7") mysqladmin ping --silent; do
+          echo "Waiting for MySQL..."
+          sleep 2
+        done
+
+    - name: Run tests
+      env:
+        DB_HOST: 127.0.0.1
+        DB_PORT: 3306
+        DB_USER: root
+        DB_PASSWORD: root_password
+        DB_NAME: test_db
+      run: |
+        docker run --rm -e DB_HOST -e DB_PORT -e DB_USER -e DB_PASSWORD -e DB_NAME -v ${{ github.workspace }}/test-reports:/test-reports mrandrianasolo/api-minikube-ci:develop sh -c "\
         pip install -r requirements.txt && \
         python -m unittest discover -s . -p 'test_app.py'"
 
