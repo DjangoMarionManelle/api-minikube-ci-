@@ -92,12 +92,16 @@ jobs:
 
     - name: Copy generated docs to gh-pages
       run: |
-        cp -r ./docs/* .
+        mkdir -p out
+        cp -r ./docs/* out/
 
     - name: Commit and push changes
       run: |
         git config --global user.email "marionlaury.r@gmail.com"
         git config --global user.name "Marion Randrianasolo"
+        cd out
+        git init
+        git remote add origin https://github.com/${{ github.repository }}.git
         git add .
         git commit -m "Update Swagger documentation"
         git push origin gh-pages
