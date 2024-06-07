@@ -78,7 +78,11 @@ jobs:
       run: |
         mkdir -p ./docs && \
         flask run --host=0.0.0.0 & sleep 10 && \
-        wget -r -np -k -P ./docs http://127.0.0.1:5000/apidocs/
+        wget -r -np -k -P ./docs http://127.0.0.1:5000/apidocs/ && \
+        ls -al ./docs
+
+    - name: Verify documentation generation
+      run: ls -al ./docs
 
     - name: Deploy Swagger documentation to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3
