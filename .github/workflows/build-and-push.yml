@@ -77,13 +77,16 @@ jobs:
         DB_NAME: test_db
       run: |
         mkdir -p ./docs && \
-        flask run --host=0.0.0.0 & sleep 10 && \
+        flask run --host=0.0.0.0 & sleep 20 && \
+        echo "Flask is running, attempting to download Swagger documentation..." && \
         wget -r -np -k -P ./docs http://127.0.0.1:5000/apidocs/ && \
         touch ./docs/.nojekyll && \
         ls -al ./docs
 
     - name: Verify documentation generation
-      run: ls -al ./docs
+      run: |
+        echo "Contents of ./docs directory:" && \
+        ls -al ./docs
 
     - name: Checkout gh-pages branch
       uses: actions/checkout@v2
@@ -93,7 +96,7 @@ jobs:
     - name: Copy generated docs to gh-pages
       run: |
         mkdir -p out
-        cp -r ./docs/* out/
+        cp -r ./docs/* out/ || echo "No files to copy"
 
     - name: Commit and push changes
       run: |
