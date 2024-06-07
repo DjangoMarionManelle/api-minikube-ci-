@@ -90,11 +90,11 @@ jobs:
       with:
         ref: gh-pages
 
-#    - name: Copy generated docs to gh-pages
-#      run: |
-#        mkdir -p out
-#        cp -r ./docs/* out/
-#        touch out/.nojekyll
+    - name: Copy generated docs to gh-pages
+      run: |
+        mkdir -p out
+        cp -r ./docs/* out/
+        touch out/.nojekyll
 
     - name: Deploy Swagger documentation to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3
