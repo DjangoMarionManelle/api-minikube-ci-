@@ -30,9 +30,15 @@ jobs:
         push: false
         tags: mrandrianasolo/api-minikube-ci:develop
 
+    - name: Run tests
+      run: |
+        docker run --rm -v ${{ github.workspace }}/test-reports:/test-reports mrandrianasolo/api-minikube-ci:develop sh -c "\
+        pip install -r requirements.txt && \
+        python -m unittest discover -s . -p 'test_app.py'"
 
     - name: Upload test results
+      if: always()
       uses: actions/upload-artifact@v2
       with:
         name: test-results
-        path: results.xml
+        path: test-reports/results.xml

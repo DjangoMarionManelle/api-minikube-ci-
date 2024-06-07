@@ -32,22 +32,23 @@ jobs:
 
     - name: Run tests
       run: |
-        docker run --rm mrandrianasolo/api-minikube-ci:${{ github.sha }} sh -c "\
-        pip install -r requirements.txt"
-#        &&         pytest --junitxml=results.xml"
+        docker run --rm -v ${{ github.workspace }}/test-reports:/test-reports mrandrianasolo/api-minikube-ci:${{ github.sha }} sh -c "\
+        pip install -r requirements.txt && \
+        python -m unittest discover -s . -p 'test_app.py'"
 
-#    - name: Upload test results
-#      uses: actions/upload-artifact@v2
-#      with:
-#        name: test-results
-#        path: results.xml
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v2
+      with:
+        name: test-results
+        path: test-reports/results.xml
 
     - name: Generate Swagger documentation
       run: |
         docker run --rm -v ${{ github.workspace }}:/app mrandrianasolo/api-minikube-ci:${{ github.sha }} sh -c "\
         mkdir -p /app/docs && \
-        flask run --host=0.0.0.0 & sleep 5 && \
-        curl -s http://localhost:5000/apidocs | tee /app/docs/index.html"
+        flask run --host=0.0.0.0 & sleep 10 && \
+        wget -r -np -k -P /app/docs http://127.0.0.1:5000/apidocs/"
 
     - name: Deploy Swagger documentation to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3
