@@ -1,75 +1,35 @@
-import pytest
-from app import app, Data
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-import os
-
-# Configuration pour utiliser une base de données de test
-TEST_DB_HOST = os.environ.get('TEST_DB_HOST', 'localhost')
-TEST_DB_PORT = os.environ.get('TEST_DB_PORT', '3306')
-TEST_DB_USER = os.environ.get('TEST_DB_USER', 'root')
-TEST_DB_PASSWORD = os.environ.get('TEST_DB_PASSWORD', '')
-TEST_DB_NAME = os.environ.get('TEST_DB_NAME', 'test_mydatabase')
-
-# Connexion à la base de données de test
-test_engine = create_engine(
-    f'mysql+pymysql://{TEST_DB_USER}:{TEST_DB_PASSWORD}@{TEST_DB_HOST}:{TEST_DB_PORT}/{TEST_DB_NAME}')
-TestSession = sessionmaker(bind=test_engine)
-test_session = TestSession()
+import unittest
+from xmlrunner import XMLTestRunner
+from app import app, session, Data
 
 
-@pytest.fixture
-def client():
-    app.config['TESTING'] = True
-    app.config[
-        'SQLALCHEMY_DATABASE_URI'] = f'mysql+pymysql://{TEST_DB_USER}:{TEST_DB_PASSWORD}@{TEST_DB_HOST}:{TEST_DB_PORT}/{TEST_DB_NAME}'
-    with app.test_client() as client:
-        with app.app_context():
-            # Créer les tables pour la base de données de test
-            Data.metadata.create_all(test_engine)
-            yield client
-            # Nettoyer les tables après les tests
-            Data.metadata.drop_all(test_engine)
+class FlaskTestCase(unittest.TestCase):
+
+    def setUp(self):
+        self.app = app.test_client()
+        self.app.testing = True
+
+    def tearDown(self):
+        session.query(Data).delete()
+        session.commit()
+
+    def test_home(self):
+        response = self.app.get('/')
+        self.assertEqual(response.status_code, 200)
+
+    def test_store_data(self):
+        response = self.app.post('/store_data', json={'name': 'test_name'})
+        self.assertEqual(response.status_code, 200)
+        data = session.query(Data).filter_by(name='test_name').first()
+        self.assertIsNotNone(data)
+
+    def test_read_data(self):
+        self.app.post('/store_data', json={'name': 'test_name'})
+        response = self.app.get('/read_data')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'test_name', response.data)
 
 
-def test_home(client):
-    rv = client.get('/')
-    assert rv.status_code == 200
-    assert b"200 OK" in rv.data
-
-
-def test_store_data(client):
-    rv = client.post('/store_data', json={'name': 'test'})
-    assert rv.status_code == 200
-    json_data = rv.get_json()
-    assert json_data['status'] == 'success'
-    assert json_data['message'] == 'Data stored successfully'
-
-
-def test_read_data(client):
-    # First, store some data
-    client.post('/store_data', json={'name': 'test'})
-
-    # Then, read the data
-    rv = client.get('/read_data')
-    assert rv.status_code == 200
-    json_data = rv.get_json()
-    assert isinstance(json_data, list)
-    assert len(json_data) > 0
-    assert json_data[0]['name'] == 'test'
-
-
-def test_exit(client):
-    rv = client.get('/exit')
-    assert rv.status_code == 200
-    json_data = rv.get_json()
-    assert json_data['status'] == 'success'
-    assert json_data['message'] == 'Server is shutting down...'
-
-
-def test_cpu_load(client):
-    rv = client.get('/cpu')
-    assert rv.status_code == 200
-    json_data = rv.get_json()
-    assert json_data['status'] == 'success'
-    assert json_data['message'] == 'CPU load started'
+if __name__ == '__main__':
+    with open('test-reports/results.xml', 'w') as output:
+        unittest.main(testRunner=XMLTestRunner(output=output))

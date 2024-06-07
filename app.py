@@ -1,11 +1,11 @@
 from flask import Flask, request, jsonify
 from sqlalchemy import create_engine, Column, Integer, String
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import declarative_base, sessionmaker
 import os
 import threading
 import signal
 from flasgger import Swagger
+import pymysql
 
 # Configuration de la connexion à la base de données
 db_host = os.environ.get('DB_HOST', 'localhost')
@@ -28,8 +28,20 @@ Base = declarative_base()
 class Data(Base):
     __tablename__ = 'data'
     id = Column(Integer, primary_key=True)
-    name = Column(String)
+    name = Column(String(255))  # Specify length for VARCHAR
 
+
+def create_database_if_not_exists():
+    conn = pymysql.connect(host=db_host, user=db_user, password=db_password, port=int(db_port))
+    cursor = conn.cursor()
+    cursor.execute(f"CREATE DATABASE IF NOT EXISTS {db_name}")
+    cursor.close()
+    conn.close()
+
+
+# Create database if it does not exist
+create_database_if_not_exists()
+Base.metadata.create_all(engine)
 
 # Initialisation de l'application Flask
 app = Flask(__name__)

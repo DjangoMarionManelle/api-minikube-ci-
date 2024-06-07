@@ -9,6 +9,15 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ROOT_PASSWORD: root_password
+          MYSQL_DATABASE: test_db
+        ports:
+          - 3306:3306
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
@@ -22,17 +31,39 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
-    - name: Build Docker image
+    - name: Build and push Docker image
       uses: docker/build-push-action@v2
       with:
         context: .
         file: ./Dockerfile
-        push: false
-        tags: mrandrianasolo/api-minikube-ci:develop
+        push: true
+        tags: ${{ secrets.DOCKER_USERNAME }}/api-minikube-ci:develop
 
+    - name: Wait for MySQL to be ready
+      run: |
+        while ! mysqladmin ping -h"127.0.0.1" --silent; do
+          echo "Waiting for MySQL..."
+          sleep 2
+        done
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Run tests
+      env:
+        DB_HOST: 127.0.0.1
+        DB_PORT: 3306
+        DB_USER: root
+        DB_PASSWORD: root_password
+        DB_NAME: test_db
+      run: |
+        python -m unittest discover -s . -p 'test_app.py'
 
     - name: Upload test results
+      if: always()
       uses: actions/upload-artifact@v2
       with:
         name: test-results
-        path: results.xml
+        path: test-reports/results.xml
